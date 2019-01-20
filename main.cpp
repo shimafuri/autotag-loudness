@@ -43,7 +43,8 @@ int main(int argc, char* argv[]) {
 
     const fs::path p = entry.path();
     const char* s = p.c_str();
-    if (!fs::is_directory(p)) {
+    // 全ての通常のファイルを処理
+    if (fs::is_regular_file(p)) {
       TagLib::FileRef f(s);
       if (!f.isNull() && f.tag()) {
         // std::cout << " -> Audio file!" << std::endl;
