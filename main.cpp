@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
   int numNonAudioFiles(0);
   int numAudioFiles(0);
 
+  // 1引数を強制
   if (argc != 2) {
     std::cout << "Usage: autotag-loudness <target-dir>" << std::endl;
     return EXIT_FAILURE;
