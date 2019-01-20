@@ -7,8 +7,11 @@
 #include <taglib/mp4tag.h>
 
 #include <experimental/filesystem>
+#include <regex>
+#include <cstdlib>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 
 namespace fs = std::experimental::filesystem;
 
@@ -53,10 +56,76 @@ int main(int argc, char* argv[]) {
 
         std::cout << p << std::endl; // ファイルパスを出力
 
-        const std::string lufs_integrated = "AAAAA";
-        const std::string lufs_max = "BBBBB";
-        const std::string lufs_min = "CCCCC";
-        const std::string lufs_range = "DDDDD";
+        std::string lufs_integrated = "AAAAA"; // 初期値
+        std::string lufs_max = "BBBBB";
+        std::string lufs_min = "CCCCC";
+        std::string lufs_range = "DDDDD";
+
+        // std::cout << "Calculating loudness..." << std::endl;
+        { // FFmpeg を実行
+          std::string command = "ffmpeg -i \"" + std::string(s) + "\" -filter_complex ebur128 -f null - 2> test.txt";
+
+          // std::cout << command << std::endl;
+          std::system(command.c_str());
+        }
+        { // FFmpeg の出力の末尾 9 行を切り出し
+          std::string command = "tail -n 9 test.txt > test_tail.txt";
+
+          // std::cout << command << std::endl;
+          std::system(command.c_str());
+        }
+        { // FFmpeg の出力の末尾 9 行を出力
+          int count(0);
+          std::ifstream file("test_tail.txt");
+          for (std::string line ; std::getline(file, line) ; ) {
+            switch (count) {
+              case 1: // Integrated loudness [LUFS]
+                // std::cout << line << std::endl;
+                { // 値を正規表現で切り出して変数に代入
+                  std::smatch results;
+                  if (std::regex_match(line, results, std::regex("^\\s+I:\\s+(-?\\d+(\\.\\d+))\\s+LUFS$"))) {
+                    lufs_integrated = results[1].str();
+                    // std::cout << lufs_integrated << std::endl;
+                  }
+                }
+                break;
+              case 5: // Loudness range [LU]
+                // std::cout << line << std::endl;
+                { // 値を正規表現で切り出して変数に代入
+                  std::smatch results;
+                  if (std::regex_match(line, results, std::regex("^\\s+LRA:\\s+(-?\\d+(\\.\\d+))\\s+LU$"))) {
+                    lufs_range = results[1].str();
+                    // std::cout << lufs_range << std::endl;
+                  }
+                }
+                break;
+              case 7: // Min loudness [LUFS]
+                // std::cout << line << std::endl;
+                { // 値を正規表現で切り出して変数に代入
+                  std::smatch results;
+                  if (std::regex_match(line, results, std::regex("^\\s+LRA low:\\s+(-?\\d+(\\.\\d+))\\s+LUFS$"))) {
+                    lufs_min = results[1].str();
+                    // std::cout << lufs_min << std::endl;
+                  }
+                }
+                break;
+              case 8: // Max loudness [LUFS]
+                // std::cout << line << std::endl;
+                { // 値を正規表現で切り出して変数に代入
+                  std::smatch results;
+                  if (std::regex_match(line, results, std::regex("^\\s+LRA high:\\s+(-?\\d+(\\.\\d+))\\s+LUFS$"))) {
+                    lufs_max = results[1].str();
+                    // std::cout << lufs_max << std::endl;
+                  }
+                }
+                break;
+              default:
+                break;
+            }
+            ++count;
+          }
+        }
+        std::cout << "Loudness: " << lufs_integrated << " LUFS (Range: " << lufs_range << " LU) (Min: " << lufs_min << " LUFS) (Max: " << lufs_max << " LUFS)" << std::endl;
 
         // タグを読み込んで書き込み
         if (p.extension() == ".m4a" || p.extension() == ".mp4") {
@@ -77,7 +146,7 @@ int main(int argc, char* argv[]) {
             mp4tag->setItem("----:com.apple.iTunes:lufs_min", TagLib::MP4::Item(TagLib::StringList(lufs_min)));
             mp4tag->setItem("----:com.apple.iTunes:lufs_range", TagLib::MP4::Item(TagLib::StringList(lufs_range)));
           }
-          std::cout << "All tags were successfully set." << std::endl;
+          // std::cout << "All tags were successfully set." << std::endl;
           mp4tag->save(); // ファイルを保存
         } else {
           TagLib::PropertyMap props = f.file()->properties(); // タグを読み込み
@@ -97,17 +166,18 @@ int main(int argc, char* argv[]) {
           }
           { // タグを書き込み
             const TagLib::PropertyMap rejectedTags = f.file()->setProperties(props);
-            if (rejectedTags.size() == 0) {
-              std::cout << "All properties were successfully set." << std::endl;
-            } else {
-              std::cout << "Some properties were rejected." << std::endl;
-            }
+            // if (rejectedTags.size() == 0) {
+            //   std::cout << "All properties were successfully set." << std::endl;
+            // } else {
+            //   std::cout << "Some properties were rejected." << std::endl;
+            // }
           }
           f.file()->save(); // ファイルを保存
         }
       } else {
         ++numNonAudioFiles;
       }
+      std::cout << std::endl;
     }
   }
   // std::cout << "\33[2K\r";
