@@ -4,6 +4,7 @@
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
 #include <taglib/tpropertymap.h>
+#include <taglib/mp4tag.h>
 
 #include <experimental/filesystem>
 #include <iostream>
@@ -47,12 +48,64 @@ int main(int argc, char* argv[]) {
     // 全ての通常のファイルを処理
     if (fs::is_regular_file(p)) {
       TagLib::FileRef f(s);
-      if (!f.isNull() && f.tag()) {
-        // std::cout << " -> Audio file!" << std::endl;
+      if (!f.isNull() && f.tag()) { // 音楽ファイルかつタグ情報があった場合
         ++numAudioFiles;
-        std::cout << p << std::endl;
+
+        std::cout << p << std::endl; // ファイルパスを出力
+
+        const std::string lufs_integrated = "AAAAA";
+        const std::string lufs_max = "BBBBB";
+        const std::string lufs_min = "CCCCC";
+        const std::string lufs_range = "DDDDD";
+
+        // タグを読み込んで書き込み
+        if (p.extension() == ".m4a" || p.extension() == ".mp4") {
+          TagLib::MP4::Tag* mp4tag = dynamic_cast<TagLib::MP4::Tag*>(f.file()->tag());
+          TagLib::MP4::ItemMap items = mp4tag->itemMap(); // タグを読み込み
+          // { // タグをダンプ
+          //   std::cout << "-- TAG (items) --" << std::endl;
+          //   for (TagLib::MP4::ItemMap::ConstIterator i = items.begin(); i != items.end(); ++i) {
+          //     TagLib::StringList list = i->second.toStringList();
+          //     for (TagLib::StringList::ConstIterator j = list.begin(); j != list.end(); ++j) {
+          //       std::cout << i->first << " - " << '"' << (*j).toCString(true) << '"' << std::endl;
+          //     }
+          //   }
+          // }
+          { // タグを書き込み
+            mp4tag->setItem("----:com.apple.iTunes:lufs_integrated", TagLib::MP4::Item(TagLib::StringList(lufs_integrated)));
+            mp4tag->setItem("----:com.apple.iTunes:lufs_max", TagLib::MP4::Item(TagLib::StringList(lufs_max)));
+            mp4tag->setItem("----:com.apple.iTunes:lufs_min", TagLib::MP4::Item(TagLib::StringList(lufs_min)));
+            mp4tag->setItem("----:com.apple.iTunes:lufs_range", TagLib::MP4::Item(TagLib::StringList(lufs_range)));
+          }
+          std::cout << "All tags were successfully set." << std::endl;
+          mp4tag->save(); // ファイルを保存
+        } else {
+          TagLib::PropertyMap props = f.file()->properties(); // タグを読み込み
+          // { // タグをダンプ
+          //   std::cout << "-- TAG (properties) --" << std::endl;
+          //   for (TagLib::PropertyMap::ConstIterator i = props.begin(); i != props.end(); ++i) {
+          //     for (TagLib::StringList::ConstIterator j = i->second.begin(); j != i->second.end(); ++j) {
+          //       std::cout << i->first << " - " << '"' << (*j).toCString(true) << '"' << std::endl;
+          //     }
+          //   }
+          // }
+          { // タグを準備
+            props.replace(TagLib::String("lufs_integrated"), TagLib::String(lufs_integrated));
+            props.replace(TagLib::String("lufs_max"), TagLib::String(lufs_max));
+            props.replace(TagLib::String("lufs_min"), TagLib::String(lufs_min));
+            props.replace(TagLib::String("lufs_range"), TagLib::String(lufs_range));
+          }
+          { // タグを書き込み
+            const TagLib::PropertyMap rejectedTags = f.file()->setProperties(props);
+            if (rejectedTags.size() == 0) {
+              std::cout << "All properties were successfully set." << std::endl;
+            } else {
+              std::cout << "Some properties were rejected." << std::endl;
+            }
+          }
+          f.file()->save(); // ファイルを保存
+        }
       } else {
-        // std::cout << " -> x" << std::endl;
         ++numNonAudioFiles;
       }
     }
