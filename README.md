@@ -20,3 +20,8 @@ sh build.sh && ./a.out <your_audio_library_dir>
 - libtag1v5 1.11.1+dfsg.1-0.2build2
 - libtag1-dev 1.11.1+dfsg.1-0.2build2
 - ffmpeg version 3.4.4-0ubuntu0.18.04.1
+
+## Known issues
+
+- Cannot process `.mp4` file correctly.
+    - Output information is broken: `Loudness: AAAAA LUFS (Range: DDDDD LU) (Min: CCCCC LUFS) (Max: BBBBB LUFS)`.
