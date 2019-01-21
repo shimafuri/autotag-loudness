@@ -200,14 +200,14 @@ int main(int argc, char* argv[]) {
             std::cout << "This file already contains loudness information. Skipped." << std::endl;
           }
         }
+        std::cout << std::endl;
       } else {
         ++numNonAudioFiles;
       }
-      std::cout << std::endl;
     }
   }
   // std::cout << "\33[2K\r";
   std::cout << "Done." << std::endl;
-  std::cout << "Non-audio files: " << numNonAudioFiles << std::endl;
   std::cout << "Audio files: " << numAudioFiles << std::endl;
+  std::cout << "Non-audio files: " << numNonAudioFiles << std::endl;
 }
