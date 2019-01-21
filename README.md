@@ -10,7 +10,7 @@
 ## Usage
 
 ```
-sh ./build.sh && ./a.out <your_audio_library_dir>
+sh build.sh && ./a.out <your_audio_library_dir>
 ```
 
 ## Tested on
