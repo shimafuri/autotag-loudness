@@ -9,7 +9,12 @@
 
 ## Usage
 
+```sh
+sudo apt install libtag1v5
+sudo apt install ffmpeg
 ```
+
+```sh
 sh build.sh && ./a.out <your_audio_library_dir>
 ```
 
